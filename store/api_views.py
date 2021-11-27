@@ -4,6 +4,15 @@ from .models import Product
 from django_filters.rest_framework import DjangoFilterBackend
 # search filters
 from rest_framework.filters import SearchFilter
+# pagination
+from rest_framework.pagination import LimitOffsetPagination
+
+# create class of productpagination
+class ProductsPagination(LimitOffsetPagination):
+    # set default limit
+    default_limit = 3
+    # set maximum limit
+    max_limit = 5
 
 class ProductList(ListAPIView):
     queryset = Product.objects.all()
@@ -12,6 +21,8 @@ class ProductList(ListAPIView):
     filter_fields = ('id', )
     # search fields
     search_fields = ('name', 'description')
+    # add pagination class
+    pagination_class = ProductsPagination
 
     # Knowing about django-filters which helps to search by query like /products/?id=3 shows data of product with id 3
     def get_queryset(self):
