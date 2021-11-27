@@ -1,4 +1,5 @@
-from rest_framework.generics import ListAPIView
+from django.core.exceptions import ValidationError
+from rest_framework.generics import ListAPIView, CreateAPIView, DestroyAPIView, RetrieveUpdateAPIView
 from .serializers import ProductSerializer
 from .models import Product
 from django_filters.rest_framework import DjangoFilterBackend
@@ -14,7 +15,7 @@ class ProductsPagination(LimitOffsetPagination):
     # set maximum limit
     max_limit = 5
 
-class ProductList(ListAPIView):
+class ProductList(ListAPIView, CreateAPIView, DestroyAPIView, RetrieveUpdateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     filter_backends = (DjangoFilterBackend, SearchFilter)
@@ -23,6 +24,8 @@ class ProductList(ListAPIView):
     search_fields = ('name', 'description')
     # add pagination class
     pagination_class = ProductsPagination
+    
+    lookup_field = 'id'
 
     # Knowing about django-filters which helps to search by query like /products/?id=3 shows data of product with id 3
     def get_queryset(self):
@@ -39,3 +42,28 @@ class ProductList(ListAPIView):
                 sale_end__gte=now
             )
         return queryset
+    
+    
+    # create a post method
+    def create(self, request, *args, **kwargs):
+        try:
+            price = request.data.get('price')
+            if price is not None and float(price) <= 0.0:
+                raise ValidationError({'price':'Price must be greater than 0'})
+        except ValueError:
+            raise ValidationError({'price':"Price Must be Number"})
+        return super().create(request, *args, **kwargs)
+
+    # delete using id
+    def delete(self, request, *args, **kwargs):
+        product_id = request.data.get('id')
+        response = super().delete(request, *args, **kwargs)
+        if response.status_code==204:
+            from django.core.cache import cache
+            cache.delete(f'product_data_{product_id}')
+        return response
+
+    # update 
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        return response
