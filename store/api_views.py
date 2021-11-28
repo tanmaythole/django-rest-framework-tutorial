@@ -43,7 +43,6 @@ class ProductList(ListAPIView, CreateAPIView, DestroyAPIView, RetrieveUpdateAPIV
             )
         return queryset
     
-    
     # create a post method
     def create(self, request, *args, **kwargs):
         try:
